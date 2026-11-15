@@ -27,6 +27,10 @@ Status: steps 1 and 2 are built (loads list with comparison table, load form, lo
 - `npx vitest run -t "single shot"` — tests matching a name
 - `npx vitest` — watch mode
 
+## Deployment
+
+Hosted on GitHub Pages at https://peshwengi.github.io/matchtracker/. `.github/workflows/deploy.yml` lints, tests, builds and deploys on every push to the listed branches. Pages serves the app under `/matchtracker/`, so the workflow sets `BASE_PATH` and `vite.config.ts` uses it as `base`; reference assets through Vite (imports or `index.html`), never with a hard-coded leading `/`. To reproduce the hosted build locally: `BASE_PATH=/matchtracker/ npm run build`.
+
 ## Architecture
 
 Installable, offline-first web app: React + TypeScript + Vite, data in IndexedDB via Dexie, service worker via `vite-plugin-pwa`. There is no server. It is used at matches where signal is unreliable, so every feature must work with no network.
