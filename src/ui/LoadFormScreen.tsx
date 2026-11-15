@@ -34,7 +34,7 @@ const optionalNumber = (value: string) => {
 
 export function LoadFormScreen({ id, fromId, navigate }: { id?: string; fromId?: string; navigate: Navigate }) {
   const [fields, setFields] = useState<Fields>()
-  const [error, setError] = useState('')
+  const [errors, setErrors] = useState<Partial<Record<keyof Fields, string>>>({})
   const [prefilled, setPrefilled] = useState(false)
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export function LoadFormScreen({ id, fromId, navigate }: { id?: string; fromId?:
   if (!fields) return null
   const set = (name: keyof Fields) => (e: { target: { value: string } }) => {
     setFields({ ...fields, [name]: e.target.value })
-    if (name === 'chargeGr') setError('')
+    if (errors[name]) setErrors({ ...errors, [name]: undefined })
   }
   const back = () => navigate(id ? { screen: 'load', id } : fromId ? { screen: 'load', id: fromId } : { screen: 'loads' })
 
@@ -62,15 +62,17 @@ export function LoadFormScreen({ id, fromId, navigate }: { id?: string; fromId?:
     e.preventDefault()
     if (!fields) return
     const chargeGr = optionalNumber(fields.chargeGr)
-    if (chargeGr === undefined || chargeGr <= 0) {
-      setError('Enter a charge weight in grains.')
-      return
-    }
-    const draft: LoadDraft = { chargeGr }
+    const bulletWeightGr = optionalNumber(fields.bulletWeightGr)
+    const bullet = fields.bullet.trim()
+    const problems: typeof errors = {}
+    if (chargeGr === undefined || chargeGr <= 0) problems.chargeGr = 'Enter a charge weight in grains.'
+    if (bulletWeightGr === undefined || bulletWeightGr <= 0) problems.bulletWeightGr = 'Enter the bullet weight in grains.'
+    if (!bullet) problems.bullet = 'Enter the bullet type.'
+    setErrors(problems)
+    if (chargeGr === undefined || bulletWeightGr === undefined || Object.keys(problems).length > 0) return
+    const draft: LoadDraft = { chargeGr, bullet, bulletWeightGr }
     const optional: Partial<LoadDraft> = {
       powder: optionalText(fields.powder),
-      bullet: optionalText(fields.bullet),
-      bulletWeightGr: optionalNumber(fields.bulletWeightGr),
       rifle: optionalText(fields.rifle),
       brass: optionalText(fields.brass),
       primer: optionalText(fields.primer),
@@ -113,32 +115,34 @@ export function LoadFormScreen({ id, fromId, navigate }: { id?: string; fromId?:
           Charge weight (gr)
           <input inputMode="decimal" value={fields.chargeGr} onChange={set('chargeGr')} autoFocus={!id} />
         </label>
-        {error && <p className="error">{error}</p>}
-        <label>
-          Powder
-          <input value={fields.powder} onChange={set('powder')} autoCapitalize="words" />
-        </label>
+        {errors.chargeGr && <p className="error">{errors.chargeGr}</p>}
         <div className="pair">
           <label>
             Bullet weight (gr)
             <input inputMode="decimal" value={fields.bulletWeightGr} onChange={set('bulletWeightGr')} />
           </label>
           <label>
-            Bullet
-            <input value={fields.bullet} onChange={set('bullet')} />
+            Bullet type
+            <input value={fields.bullet} onChange={set('bullet')} placeholder="e.g. Berger Hybrid" />
           </label>
         </div>
+        {errors.bulletWeightGr && <p className="error">{errors.bulletWeightGr}</p>}
+        {errors.bullet && <p className="error">{errors.bullet}</p>}
         <label>
-          Rifle or cartridge
+          Powder (optional)
+          <input value={fields.powder} onChange={set('powder')} autoCapitalize="words" />
+        </label>
+        <label>
+          Rifle or cartridge (optional)
           <input value={fields.rifle} onChange={set('rifle')} />
         </label>
         <label>
-          Loaded on
+          Loaded on (optional)
           <input type="date" value={fields.loadedOn} onChange={set('loadedOn')} />
         </label>
 
         <details open={moreOpen}>
-          <summary>More (all optional)</summary>
+          <summary>More (optional)</summary>
           <label>
             Brass
             <input value={fields.brass} onChange={set('brass')} />

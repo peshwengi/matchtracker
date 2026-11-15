@@ -24,7 +24,7 @@ export function LoadsScreen({ navigate }: { navigate: Navigate }) {
 
       {loads.length === 0 && (
         <p className="empty">
-          No loads yet. Add one with just a charge weight, then import a chronograph session to it.
+          No loads yet. Add one with a charge weight and bullet, then import a chronograph session to it.
         </p>
       )}
 

@@ -31,7 +31,7 @@ export function LoadDetailScreen({ id, navigate }: { id: string; navigate: Navig
   const recipe: [string, string | undefined][] = [
     ['Charge', `${load.chargeGr} gr`],
     ['Powder', load.powder],
-    ['Bullet', bulletLabel(load) || undefined],
+    ['Bullet', bulletLabel(load)],
     ['Rifle', load.rifle],
     ['Brass', load.brass],
     ['Primer', load.primer],

@@ -79,7 +79,7 @@ export class Store {
 
   /**
    * Attach an imported ShotView session to a load. Importing the same session
-   * twice is a no-op. Fills in the load's bullet weight if it has none.
+   * twice is a no-op. Reports a bullet weight that disagrees with the load.
    */
   async importShotViewSession(loadId: string, session: ShotViewSession): Promise<ImportResult> {
     const load = await this.getLoad(loadId)
@@ -107,10 +107,7 @@ export class Store {
     await this.db.rangeStrings.add(string)
 
     const weight = session.projectileWeightGr
-    if (weight !== undefined && load.bulletWeightGr === undefined) {
-      await this.db.loads.put(touch(load, { bulletWeightGr: weight }))
-    }
-    const mismatch = weight !== undefined && load.bulletWeightGr !== undefined && weight !== load.bulletWeightGr
+    const mismatch = weight !== undefined && weight !== load.bulletWeightGr
     return { outcome: 'imported', string, bulletWeightMismatchGr: mismatch ? weight : undefined }
   }
 }

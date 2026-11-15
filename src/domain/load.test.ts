@@ -6,7 +6,7 @@ let n = 0
 function load(fields: Partial<Load> & { chargeGr: number }): Load {
   n++
   const at = `2026-01-${String(n).padStart(2, '0')}T00:00:00.000Z`
-  return { id: `id-${n}`, createdAt: at, updatedAt: at, ...fields }
+  return { id: `id-${n}`, createdAt: at, updatedAt: at, bullet: 'Hybrid', bulletWeightGr: 108, ...fields }
 }
 
 describe('loadTitle', () => {
@@ -22,9 +22,9 @@ describe('newLoadDraft', () => {
     const previous = load({ chargeGr: 30.2, powder: 'Varget', bulletWeightGr: 108, name: 'A', notes: 'n', loadedOn: '2026-01-01' })
     expect(newLoadDraft(previous, '2026-02-02')).toEqual({
       chargeGr: 30.2,
-      powder: 'Varget',
-      bullet: undefined,
+      bullet: 'Hybrid',
       bulletWeightGr: 108,
+      powder: 'Varget',
       rifle: undefined,
       brass: undefined,
       primer: undefined,
@@ -34,7 +34,7 @@ describe('newLoadDraft', () => {
   })
 
   it('starts empty with no previous load', () => {
-    expect(newLoadDraft(undefined, '2026-02-02')).toMatchObject({ chargeGr: 0, loadedOn: '2026-02-02' })
+    expect(newLoadDraft(undefined, '2026-02-02')).toMatchObject({ chargeGr: 0, bullet: '', bulletWeightGr: 0, loadedOn: '2026-02-02' })
   })
 })
 
@@ -44,12 +44,13 @@ describe('groupLoads', () => {
       load({ chargeGr: 30.4, powder: 'Varget', bulletWeightGr: 108, rifle: '6 Dasher' }),
       load({ chargeGr: 30.0, powder: 'varget ', bulletWeightGr: 108, rifle: '6 dasher' }),
       load({ chargeGr: 41.5, powder: 'H4350', bulletWeightGr: 140, bullet: 'ELD-M' }),
+      load({ chargeGr: 30.2, powder: 'Varget', bulletWeightGr: 105, rifle: '6 Dasher' }),
     ])
-    expect(groups.map((g) => g.heading)).toEqual(['140 gr ELD-M · H4350', '6 Dasher · 108 gr · Varget'])
-    expect(groups[1].loads.map((l) => l.chargeGr)).toEqual([30.0, 30.4])
-  })
-
-  it('gives loads with no recipe detail a heading', () => {
-    expect(groupLoads([load({ chargeGr: 30 })])[0].heading).toBe('Other loads')
+    expect(groups.map((g) => g.heading)).toEqual([
+      '6 Dasher · 105 gr Hybrid · Varget',
+      '140 gr ELD-M · H4350',
+      '6 Dasher · 108 gr Hybrid · Varget',
+    ])
+    expect(groups[2].loads.map((l) => l.chargeGr)).toEqual([30.0, 30.4])
   })
 })

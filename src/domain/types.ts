@@ -4,8 +4,8 @@
 // - ids are UUID strings generated on the device, never auto-increment numbers
 // - every stored entity carries createdAt/updatedAt (ISO strings) and optional deletedAt
 // - units are part of the field name (Gr, In, Fps, Yd)
-// - only chargeGr is required on a load; the owner does not want to be made to
-//   enter detail up front, so new fields must be optional
+// - a load requires only charge, bullet and bullet weight; the owner does not
+//   want to be made to enter detail up front, so new fields must be optional
 
 export interface Entity {
   id: string
@@ -21,9 +21,10 @@ export interface Entity {
  */
 export interface Load extends Entity {
   chargeGr: number
+  /** Bullet make and type, e.g. "Berger Hybrid". */
+  bullet: string
+  bulletWeightGr: number
   powder?: string
-  bullet?: string
-  bulletWeightGr?: number
   /** Rifle or cartridge, e.g. "6 Dasher". */
   rifle?: string
   brass?: string

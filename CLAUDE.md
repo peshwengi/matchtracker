@@ -12,7 +12,7 @@ It exists because other reloading apps demand too much input up front. The owner
 2. Compare them using chronograph data imported from Garmin ShotView plus a rough group size and notes.
 3. Record which load was used at which match.
 
-Design rule that follows from this: **never add a required field or a setup step.** A load needs only a charge weight. Everything else is optional, free text where possible, and prefilled from the previous load. Do not add separate records for rifles, barrels, component lots, brass firings or anything else that must be set up before a load can be created; an earlier model had these and was removed for this reason. Ask the owner before adding a new thing to measure.
+Design rule that follows from this: **never add a required field or a setup step.** A load needs only a charge weight, bullet type and bullet weight (the owner made the bullet mandatory: it defines the external ballistics, and they need the weight to hand when setting up the chronograph). Everything else is optional, free text where possible, and prefilled from the previous load. Do not add separate records for rifles, barrels, component lots, brass firings or anything else that must be set up before a load can be created; an earlier model had these and was removed for this reason. Ask the owner before adding a new thing to measure.
 
 Status: steps 1 and 2 are built (loads list with comparison table, load form, load detail with ShotView import). Step 3, matches, has types and tables but no screens.
 
