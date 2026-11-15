@@ -36,7 +36,7 @@ It is single-user today but may be opened to other shooters later. Three rules k
 ## Conventions
 
 - Units are part of the field name: `chargeGr`, `cbtoIn`, `velocitiesFps`, `distanceYd`. Do not add a bare numeric measurement field.
-- Standard deviation from `velocityStats()` is the sample SD (n − 1). Garmin's ShotView reports the population SD (n), so its figure is lower for the same shots (18.4 vs 20.6 fps in the fixture). Which one the app displays is undecided: ask the owner before building a screen that shows SD.
+- Standard deviation is the sample SD (n − 1), decided by the owner. Garmin's ShotView reports the population SD (n), which is lower for the same shots (18.4 vs 20.6 fps in the fixture); show Garmin's figure only as a labelled cross-check on an imported session. Always show the shot count next to an SD. To combine strings from the same ammo batch use `pooledVelocityStats()`, which measures each string around its own average so a velocity shift between sessions is not counted as inconsistency; do not concatenate the shots.
 - Chronograph data comes in by importing the CSV that Garmin's ShotView app exports, parsed by `src/domain/shotview.ts`. There is no Bluetooth link to the chronograph and no public Garmin protocol for one. The file is not a regular table; `src/domain/fixtures/shotview-session.csv` is a real export, and it is the only sample seen so far, so how excluded shots or the bore flags appear is unverified.
 - A different lot of powder, bullets, primers or brass is a different `ComponentLot`, and a `Load` references lots, not products.
 - Dexie schema: only indexed fields are declared in `src/data/db.ts`. Never edit a released `version()`; add a new version with an upgrade function.
