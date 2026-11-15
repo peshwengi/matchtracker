@@ -1,0 +1,22 @@
+﻿"Rifle session started at 07:23"
+#,SPEED (FPS),Δ AVG (FPS),KE (FT-LB),POWER FACTOR (KGR⋅FT/S),TIME,CLEAN BORE,COLD BORE,SHOT NOTES
+1, 2747.7, -33.3, 1810.2, 296.8, 07:30:23, , , 
+2, 2778.2, -2.8, 1850.7, 300.0, 07:30:55, , , 
+3, 2798.8, 17.8, 1878.2, 302.3, 07:31:42, , , 
+4, 2783.3, 2.3, 1857.5, 300.6, 07:32:03, , , 
+5, 2797.1, 16.0, 1875.9, 302.1, 07:32:32, , , 
+
+-,,,,,,
+
+AVERAGE SPEED,2781.0,,,,,,,
+STD DEV,18.4,,,,,,,
+SPREAD,51.1,,,,,,,
+AVERAGE POWER FACTOR,300.4,,,,,,,
+PROJECTILE WEIGHT(GRAINS),108.0,,,,,,,
+AVG KINETIC ENERGY,1854.5,,,,,,,
+SESSION NOTE,"",,,,,,,
+
+-,,,,,,
+
+DATE, "June 15, 2024 at 07:23",,,,,
+All shots included in the calculations,,,,,,,﻿
