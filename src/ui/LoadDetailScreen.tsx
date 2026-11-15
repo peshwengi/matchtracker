@@ -144,7 +144,7 @@ export function LoadDetailScreen({ id, navigate }: { id: string; navigate: Navig
         <h2>Matches</h2>
         {matches.length === 0 && <p className="hint">Not shot at a match yet.</p>}
         {matches.map((m) => (
-          <button key={m.id} className="list-row" onClick={() => navigate({ screen: 'match-form', id: m.id })}>
+          <button key={m.id} className="list-row" onClick={() => navigate({ screen: 'match-form', id: m.id, loadId: id })}>
             <span>{m.name}</span>
             <span className="muted">{[fmtDate(m.startsOn), m.result].filter(Boolean).join(' · ')}</span>
           </button>
