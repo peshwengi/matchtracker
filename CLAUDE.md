@@ -25,6 +25,8 @@ Status: early skeleton. The domain model and storage layer exist; there are no r
 
 Installable, offline-first web app: React + TypeScript + Vite, data in IndexedDB via Dexie, service worker via `vite-plugin-pwa`. There is no server. It is used at matches where signal is unreliable, so every feature must work with no network.
 
+It is mobile-first, and the primary target is an iPhone: the owner installs it from Safari with Add to Home Screen. Design screens for a phone held in one hand first and treat desktop as secondary. Check that any browser API works in iOS Safari before relying on it (Web Bluetooth, for example, does not). If App Store distribution or native device access is needed later, the planned route is wrapping this same app with Capacitor, not a rewrite.
+
 It is single-user today but may be opened to other shooters later. Three rules keep that door open:
 
 - `src/domain/` is plain types and pure functions (units, statistics, scoring). It imports nothing from `src/data/` or React.
