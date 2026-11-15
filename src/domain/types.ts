@@ -3,7 +3,9 @@
 // Conventions (see CLAUDE.md):
 // - ids are UUID strings generated on the device, never auto-increment numbers
 // - every stored entity carries createdAt/updatedAt (ISO strings) and optional deletedAt
-// - units are part of the field name (Gr, In, Fps, Yd, Mil)
+// - units are part of the field name (Gr, In, Fps, Yd)
+// - only chargeGr is required on a load; the owner does not want to be made to
+//   enter detail up front, so new fields must be optional
 
 export interface Entity {
   id: string
@@ -12,68 +14,39 @@ export interface Entity {
   deletedAt?: string
 }
 
-export interface Rifle extends Entity {
-  name: string
-  cartridge: string
-  notes?: string
-}
-
-export interface Barrel extends Entity {
-  rifleId: string
-  description: string
-  twistRateIn?: number
-  installedOn?: string
-  retiredOn?: string
-}
-
-export type ComponentKind = 'bullet' | 'powder' | 'primer' | 'brass'
-
-/** One purchased lot of a component. Lots matter: a new powder lot is a new load. */
-export interface ComponentLot extends Entity {
-  kind: ComponentKind
-  manufacturer: string
-  product: string
-  lotNumber?: string
-  /** Bullet weight in grains; bullets only. */
-  bulletWeightGr?: number
-  notes?: string
-}
-
-/** A recipe: what goes into a round, independent of when it was loaded. */
+/**
+ * One batch of ammunition: a recipe and the rounds loaded to it. Component
+ * descriptions are free text. There are deliberately no separate rifle,
+ * barrel or component-lot records.
+ */
 export interface Load extends Entity {
-  name: string
-  rifleId: string
-  bulletLotId: string
-  powderLotId: string
-  primerLotId: string
-  brassLotId: string
   chargeGr: number
+  powder?: string
+  bullet?: string
+  bulletWeightGr?: number
+  /** Rifle or cartridge, e.g. "6 Dasher". */
+  rifle?: string
+  brass?: string
+  primer?: string
   /** Cartridge base to ogive. */
   cbtoIn?: number
-  coalIn?: number
+  /** YYYY-MM-DD. */
+  loadedOn?: string
+  name?: string
   notes?: string
 }
 
-/** A set of rounds loaded together from one Load, for testing or for a match. */
-export interface AmmoBatch extends Entity {
-  loadId: string
-  loadedOn: string
-  roundCount: number
-  /** How many times this brass had been fired before this loading. */
-  brassFirings?: number
-  notes?: string
-}
-
-/** A string of shots fired from one batch over a chronograph and/or at a target. */
+/** A string of shots fired from one load over a chronograph and/or at a target. */
 export interface RangeString extends Entity {
-  batchId: string
-  barrelId: string
+  loadId: string
+  /** Local "YYYY-MM-DDTHH:mm" or "YYYY-MM-DD". */
   firedOn: string
   velocitiesFps: number[]
   groupSizeIn?: number
   distanceYd?: number
-  temperatureF?: number
   notes?: string
+  /** Population SD as reported by Garmin ShotView, kept as a cross-check. */
+  garminSdFps?: number
 }
 
 export type MatchFormat = 'prs' | 'elr-steel' | 'other'
@@ -81,11 +54,10 @@ export type MatchFormat = 'prs' | 'elr-steel' | 'other'
 export interface Match extends Entity {
   name: string
   format: MatchFormat
+  /** YYYY-MM-DD. */
   startsOn: string
   location?: string
-  rifleId: string
-  barrelId: string
-  batchId: string
+  loadId?: string
   notes?: string
 }
 
@@ -96,8 +68,5 @@ export interface Stage extends Entity {
   name?: string
   roundsFired: number
   impacts: number
-  /** Points available, when it differs from the round count. */
-  pointsPossible?: number
-  pointsScored?: number
   notes?: string
 }

@@ -4,11 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-MatchTracker tracks handloaded ammunition for long-range rifle competition and ties it to match results. The owner shoots PRS and ELR steel matches (e.g. the Nightforce ELR Steel Challenge). Range sessions exist only to gather velocity and group data for load development; matches are where the ammunition is used and scored.
+MatchTracker is a streamlined reloading tracker for long-range rifle competition. The owner shoots PRS and ELR steel matches (e.g. the Nightforce ELR Steel Challenge) and uses an iPhone.
 
-The chain the app exists to preserve is: component lots → load (recipe) → ammo batch → range strings (chronograph and group data) and match stages (impacts). Any result should trace back to the exact load and lots that produced it.
+It exists because other reloading apps demand too much input up front. The owner's process is fixed and does not change per batch; they care about charge weight, bullet weight and perhaps brass, and consider the shooter and conditions the biggest variables in a match. The workflow is three steps:
 
-Status: early skeleton. The domain model and storage layer exist; there are no real screens yet. The feature that sets this apart from existing reloading apps has not been decided, so ask the owner before designing around an assumed one.
+1. Build a few loads (batches of ammunition) that differ in a small way, usually charge weight.
+2. Compare them using chronograph data imported from Garmin ShotView plus a rough group size and notes.
+3. Record which load was used at which match.
+
+Design rule that follows from this: **never add a required field or a setup step.** A load needs only a charge weight. Everything else is optional, free text where possible, and prefilled from the previous load. Do not add separate records for rifles, barrels, component lots, brass firings or anything else that must be set up before a load can be created; an earlier model had these and was removed for this reason. Ask the owner before adding a new thing to measure.
+
+Status: steps 1 and 2 are built (loads list with comparison table, load form, load detail with ShotView import). Step 3, matches, has types and tables but no screens.
 
 ## Commands
 
@@ -29,16 +35,21 @@ It is mobile-first, and the primary target is an iPhone: the owner installs it f
 
 It is single-user today but may be opened to other shooters later. Three rules keep that door open:
 
-- `src/domain/` is plain types and pure functions (units, statistics, scoring). It imports nothing from `src/data/` or React.
-- `src/data/` is the only code that touches Dexie. Screens go through it rather than calling IndexedDB directly, so a sync backend can be added behind it.
+- `src/domain/` is plain types and pure functions (statistics, ShotView parsing, load grouping). It imports nothing from `src/data/` or React.
+- `src/data/` is the only code that touches Dexie. Screens in `src/ui/` read through the live-query hooks in `hooks.ts` and write through the `Store` in `store.ts`, so a sync backend can be added behind them.
 - Every stored record extends `Entity`: a UUID `id` generated on the device, `createdAt`/`updatedAt` ISO strings, and `deletedAt` for soft deletes. Create records with `newEntity()` and change them with `touch()` from `src/data/entity.ts`; do not use auto-increment keys or hard deletes.
+
+Navigation is a `Route` value held in `App.tsx` state (`src/ui/nav.ts`); there is no router library or URL routing. Styling is plain CSS in `src/index.css` with light and dark themes from CSS variables.
+
+The loads screen is the comparison view: `groupLoads()` puts loads sharing rifle, bullet and powder in one table sorted by charge, so a charge ladder reads top to bottom.
 
 ## Conventions
 
-- Units are part of the field name: `chargeGr`, `cbtoIn`, `velocitiesFps`, `distanceYd`. Do not add a bare numeric measurement field.
+- Units are part of the field name: `chargeGr`, `cbtoIn`, `velocitiesFps`, `distanceYd`. The UI is imperial only (grains, fps, inches, yards). Do not add a bare numeric measurement field.
 - Standard deviation is the sample SD (n − 1), decided by the owner. Garmin's ShotView reports the population SD (n), which is lower for the same shots (18.4 vs 20.6 fps in the fixture); show Garmin's figure only as a labelled cross-check on an imported session. Always show the shot count next to an SD. To combine strings from the same ammo batch use `pooledVelocityStats()`, which measures each string around its own average so a velocity shift between sessions is not counted as inconsistency; do not concatenate the shots.
 - Chronograph data comes in by importing the CSV that Garmin's ShotView app exports, parsed by `src/domain/shotview.ts`. There is no Bluetooth link to the chronograph and no public Garmin protocol for one. The file is not a regular table; `src/domain/fixtures/shotview-session.csv` is a real export, and it is the only sample seen so far, so how excluded shots or the bore flags appear is unverified.
-- A different lot of powder, bullets, primers or brass is a different `ComponentLot`, and a `Load` references lots, not products.
-- Dexie schema: only indexed fields are declared in `src/data/db.ts`. Never edit a released `version()`; add a new version with an upgrade function.
+- Dexie schema: only indexed fields are declared in `src/data/db.ts`. The app has no real data yet, so version 1 may still be edited; once the owner starts using it, add a new version with an upgrade function instead.
 - Imports use explicit `.ts`/`.tsx` extensions (`verbatimModuleSyntax` and `erasableSyntaxOnly` are on, so no enums or parameter properties).
-- Data-layer tests use `fake-indexeddb/auto` and a uniquely named `MatchTrackerDb` per test.
+- Data-layer tests use `fake-indexeddb/auto` and a `Store` over a uniquely named `MatchTrackerDb` per test.
+- There are no component tests. Check screen changes by driving the dev server in a phone-sized browser (Playwright with the iPhone device profile), including importing `src/domain/fixtures/shotview-session.csv`.
+- Text inputs must stay at 16px or larger, or iOS Safari zooms the page on focus.
