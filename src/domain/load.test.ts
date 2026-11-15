@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { groupLoads, loadTitle, newLoadDraft } from './load.ts'
+import { groupLoads, loadSummary, loadTitle, newLoadDraft } from './load.ts'
 import type { Load } from './types.ts'
 
 let n = 0
@@ -14,6 +14,13 @@ describe('loadTitle', () => {
     expect(loadTitle({ chargeGr: 30.2, powder: 'Varget' })).toBe('30.2 gr Varget')
     expect(loadTitle({ chargeGr: 30.2 })).toBe('30.2 gr')
     expect(loadTitle({ chargeGr: 30.2, powder: 'Varget', name: 'Match load' })).toBe('Match load')
+  })
+})
+
+describe('loadSummary', () => {
+  it('describes charge and bullet, with the name first when there is one', () => {
+    expect(loadSummary(load({ chargeGr: 30.2, powder: 'Varget' }))).toBe('30.2 gr Varget · 108 gr Hybrid')
+    expect(loadSummary(load({ chargeGr: 30.2, name: 'Match load' }))).toBe('Match load · 30.2 gr · 108 gr Hybrid')
   })
 })
 

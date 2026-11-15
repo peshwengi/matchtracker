@@ -64,6 +64,33 @@ describe('Store', () => {
     expect(await store.listStrings()).toEqual([])
   })
 
+  it('lists matches newest first and filters by load', async () => {
+    const load = await store.createLoad(base)
+    await store.createMatch({ name: 'Spring', startsOn: '2026-04-01', loadId: load.id })
+    await store.createMatch({ name: 'Autumn', startsOn: '2026-10-01' })
+    expect((await store.listMatches()).map((m) => m.name)).toEqual(['Autumn', 'Spring'])
+    expect((await store.listMatches(load.id)).map((m) => m.name)).toEqual(['Spring'])
+  })
+
+  it('updates and deletes a match, removing cleared fields', async () => {
+    const match = await store.createMatch({ name: 'Spring', startsOn: '2026-04-01', result: '70/100' })
+    await store.updateMatch(match.id, { name: 'Spring PRS', startsOn: '2026-04-02' })
+    const saved = await store.getMatch(match.id)
+    expect(saved).toMatchObject({ name: 'Spring PRS', startsOn: '2026-04-02' })
+    expect(saved && 'result' in saved).toBe(false)
+    await store.deleteMatch(match.id)
+    expect(await store.listMatches()).toEqual([])
+  })
+
+  it('keeps a match and its load label after the load is deleted', async () => {
+    const load = await store.createLoad(base)
+    await store.createMatch({ name: 'Spring', startsOn: '2026-04-01', loadId: load.id })
+    await store.deleteLoad(load.id)
+    expect(await store.listMatches()).toHaveLength(1)
+    expect(await store.listLoads()).toEqual([])
+    expect((await store.listLoads(true)).map((l) => l.id)).toEqual([load.id])
+  })
+
   it('updates and deletes a string', async () => {
     const load = await store.createLoad(base)
     const result = await store.importShotViewSession(load.id, parseShotViewCsv(fixture))

@@ -4,6 +4,7 @@ import { pooledVelocityStats } from '../domain/stats.ts'
 import type { Load, RangeString } from '../domain/types.ts'
 import { fmt, fmtDate, mean } from './format.ts'
 import type { Navigate } from './nav.ts'
+import { TabBar } from './TabBar.tsx'
 
 export function LoadsScreen({ navigate }: { navigate: Navigate }) {
   const loads = useLoads()
@@ -14,7 +15,7 @@ export function LoadsScreen({ navigate }: { navigate: Navigate }) {
   for (const s of strings) byLoad.set(s.loadId, [...(byLoad.get(s.loadId) ?? []), s])
 
   return (
-    <main>
+    <main className="with-tabs">
       <header className="bar">
         <h1>Loads</h1>
         <button className="primary" onClick={() => navigate({ screen: 'load-form' })}>
@@ -46,6 +47,7 @@ export function LoadsScreen({ navigate }: { navigate: Navigate }) {
           <p className="units">Charge in grains, velocity in fps, group in inches.</p>
         </section>
       ))}
+      <TabBar current="loads" navigate={navigate} />
     </main>
   )
 }

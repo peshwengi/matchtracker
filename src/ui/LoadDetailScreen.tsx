@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
-import { useLoad, useStrings } from '../data/hooks.ts'
+import { useLoad, useMatches, useStrings } from '../data/hooks.ts'
 import { store } from '../data/store.ts'
 import { bulletLabel, loadTitle } from '../domain/load.ts'
 import { parseShotViewCsv, ShotViewParseError } from '../domain/shotview.ts'
@@ -11,9 +11,10 @@ import { StringCard } from './StringCard.tsx'
 export function LoadDetailScreen({ id, navigate }: { id: string; navigate: Navigate }) {
   const load = useLoad(id)
   const strings = useStrings(id)
+  const matches = useMatches(id)
   const [messages, setMessages] = useState<string[]>([])
 
-  if (load === undefined || !strings) return null
+  if (load === undefined || !strings || !matches) return null
   if (load === null) {
     return (
       <main>
@@ -138,6 +139,20 @@ export function LoadDetailScreen({ id, navigate }: { id: string; navigate: Navig
       {[...strings].reverse().map((s) => (
         <StringCard key={s.id} string={s} />
       ))}
+
+      <section className="card">
+        <h2>Matches</h2>
+        {matches.length === 0 && <p className="hint">Not shot at a match yet.</p>}
+        {matches.map((m) => (
+          <button key={m.id} className="list-row" onClick={() => navigate({ screen: 'match-form', id: m.id })}>
+            <span>{m.name}</span>
+            <span className="muted">{[fmtDate(m.startsOn), m.result].filter(Boolean).join(' · ')}</span>
+          </button>
+        ))}
+        <button className="wide" onClick={() => navigate({ screen: 'match-form', loadId: id })}>
+          Record a match with this load
+        </button>
+      </section>
 
       <div className="actions">
         <button onClick={() => navigate({ screen: 'load-form', fromId: id })}>New load from this one</button>

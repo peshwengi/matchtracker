@@ -14,7 +14,7 @@ It exists because other reloading apps demand too much input up front. The owner
 
 Design rule that follows from this: **never add a required field or a setup step.** A load needs only a charge weight, bullet type and bullet weight (the owner made the bullet mandatory: it defines the external ballistics, and they need the weight to hand when setting up the chronograph). Everything else is optional, free text where possible, and prefilled from the previous load. Do not add separate records for rifles, barrels, component lots, brass firings or anything else that must be set up before a load can be created; an earlier model had these and was removed for this reason. Ask the owner before adding a new thing to measure.
 
-Status: steps 1 and 2 are built (loads list with comparison table, load form, load detail with ShotView import). Step 3, matches, has types and tables but no screens.
+Status: all three steps are built. Loads: comparison list, form, detail with ShotView import. Matches: list and form, reached from a bottom tab bar and from a load's own Matches section. A match needs only a name; its result is one free-text field and there is no per-stage scoring, by the rule above. There is no backup or export yet, so the owner's data exists only on their phone.
 
 ## Commands
 
@@ -45,6 +45,8 @@ It is single-user today but may be opened to other shooters later. Three rules k
 
 Navigation is a `Route` value held in `App.tsx` state (`src/ui/nav.ts`); there is no router library or URL routing. Styling is plain CSS in `src/index.css` with light and dark themes from CSS variables.
 
+Deleting a load soft-deletes its range strings but leaves its matches, which keep showing the load as history; `listLoads(true)` includes deleted loads for that purpose.
+
 The loads screen is the comparison view: `groupLoads()` puts loads sharing rifle, bullet and powder in one table sorted by charge, so a charge ladder reads top to bottom.
 
 ## Conventions
@@ -52,7 +54,7 @@ The loads screen is the comparison view: `groupLoads()` puts loads sharing rifle
 - Units are part of the field name: `chargeGr`, `cbtoIn`, `velocitiesFps`, `distanceYd`. The UI is imperial only (grains, fps, inches, yards). Do not add a bare numeric measurement field.
 - Standard deviation is the sample SD (n − 1), decided by the owner. Garmin's ShotView reports the population SD (n), which is lower for the same shots (18.4 vs 20.6 fps in the fixture); show Garmin's figure only as a labelled cross-check on an imported session. Always show the shot count next to an SD. To combine strings from the same ammo batch use `pooledVelocityStats()`, which measures each string around its own average so a velocity shift between sessions is not counted as inconsistency; do not concatenate the shots.
 - Chronograph data comes in by importing the CSV that Garmin's ShotView app exports, parsed by `src/domain/shotview.ts`. There is no Bluetooth link to the chronograph and no public Garmin protocol for one. The file is not a regular table; `src/domain/fixtures/shotview-session.csv` is a real export, and it is the only sample seen so far, so how excluded shots or the bore flags appear is unverified.
-- Dexie schema: only indexed fields are declared in `src/data/db.ts`. The app has no real data yet, so version 1 may still be edited; once the owner starts using it, add a new version with an upgrade function instead.
+- Dexie schema: only indexed fields are declared in `src/data/db.ts`. The owner has real data on their phone, so never edit an existing `version()`: add the next one (with an upgrade function if records need changing), and extend `src/data/db.test.ts`, which checks older data survives the upgrade.
 - Imports use explicit `.ts`/`.tsx` extensions (`verbatimModuleSyntax` and `erasableSyntaxOnly` are on, so no enums or parameter properties).
 - Data-layer tests use `fake-indexeddb/auto` and a `Store` over a uniquely named `MatchTrackerDb` per test.
 - There are no component tests. Check screen changes by driving the dev server in a phone-sized browser (Playwright with the iPhone device profile), including importing `src/domain/fixtures/shotview-session.csv`.

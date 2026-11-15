@@ -1,10 +1,11 @@
 import type { LoadDraft } from '../domain/load.ts'
 import type { ShotViewSession } from '../domain/shotview.ts'
-import type { Entity, Load, RangeString } from '../domain/types.ts'
+import type { Entity, Load, Match, RangeString } from '../domain/types.ts'
 import { db as defaultDb, type MatchTrackerDb } from './db.ts'
 import { newEntity, touch } from './entity.ts'
 
 export type RangeStringDraft = Omit<RangeString, keyof Entity>
+export type MatchDraft = Omit<Match, keyof Entity>
 
 const live = <T extends Entity>(records: T[]) => records.filter((r) => !r.deletedAt)
 
@@ -21,8 +22,10 @@ export class Store {
     this.db = db
   }
 
-  async listLoads(): Promise<Load[]> {
-    return live(await this.db.loads.toArray())
+  /** `includeDeleted` is for labelling old matches whose load has since been deleted. */
+  async listLoads(includeDeleted = false): Promise<Load[]> {
+    const loads = await this.db.loads.toArray()
+    return includeDeleted ? loads : live(loads)
   }
 
   async getLoad(id: string): Promise<Load | undefined> {
@@ -50,7 +53,7 @@ export class Store {
     await this.db.loads.put({ ...draft, id, createdAt, deletedAt, updatedAt: new Date().toISOString() })
   }
 
-  /** Soft-delete a load and its strings. */
+  /** Soft-delete a load and its strings. Matches keep pointing at it as history. */
   async deleteLoad(id: string): Promise<void> {
     const deletedAt = new Date().toISOString()
     await this.db.transaction('rw', this.db.loads, this.db.rangeStrings, async () => {
@@ -75,6 +78,37 @@ export class Store {
   async deleteString(id: string): Promise<void> {
     const deletedAt = new Date().toISOString()
     await this.db.rangeStrings.update(id, { deletedAt, updatedAt: deletedAt })
+  }
+
+  /** Newest first. */
+  async listMatches(loadId?: string): Promise<Match[]> {
+    const matches = loadId
+      ? await this.db.matches.where('loadId').equals(loadId).toArray()
+      : await this.db.matches.toArray()
+    return live(matches).sort((a, b) => b.startsOn.localeCompare(a.startsOn) || b.createdAt.localeCompare(a.createdAt))
+  }
+
+  async getMatch(id: string): Promise<Match | undefined> {
+    const match = await this.db.matches.get(id)
+    return match && !match.deletedAt ? match : undefined
+  }
+
+  async createMatch(draft: MatchDraft): Promise<Match> {
+    const match = newEntity<Match>(draft)
+    await this.db.matches.add(match)
+    return match
+  }
+
+  async updateMatch(id: string, draft: MatchDraft): Promise<void> {
+    const match = await this.getMatch(id)
+    if (!match) throw new Error('Match not found')
+    const { createdAt, deletedAt } = match
+    await this.db.matches.put({ ...draft, id, createdAt, deletedAt, updatedAt: new Date().toISOString() })
+  }
+
+  async deleteMatch(id: string): Promise<void> {
+    const deletedAt = new Date().toISOString()
+    await this.db.matches.update(id, { deletedAt, updatedAt: deletedAt })
   }
 
   /**

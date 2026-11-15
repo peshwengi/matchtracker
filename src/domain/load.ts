@@ -6,6 +6,12 @@ export function bulletLabel(load: Pick<Load, 'bullet' | 'bulletWeightGr'>): stri
   return `${load.bulletWeightGr} gr ${load.bullet}`.trim()
 }
 
+/** One-line description for pickers and match lists, e.g. "30.2 gr Varget · 108 gr Berger Hybrid". */
+export function loadSummary(load: Pick<Load, 'name' | 'chargeGr' | 'powder' | 'bullet' | 'bulletWeightGr'>): string {
+  const recipe = [`${load.chargeGr} gr`, load.powder ?? ''].filter(Boolean).join(' ')
+  return [load.name ?? '', recipe, bulletLabel(load)].filter(Boolean).join(' · ')
+}
+
 export function loadTitle(load: Pick<Load, 'name' | 'chargeGr' | 'powder'>): string {
   return load.name || [`${load.chargeGr} gr`, load.powder ?? ''].filter(Boolean).join(' ')
 }

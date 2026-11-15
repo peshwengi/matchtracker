@@ -50,24 +50,14 @@ export interface RangeString extends Entity {
   garminSdFps?: number
 }
 
-export type MatchFormat = 'prs' | 'elr-steel' | 'other'
-
+/** A match and the load shot at it. Only the name is required. */
 export interface Match extends Entity {
   name: string
-  format: MatchFormat
   /** YYYY-MM-DD. */
   startsOn: string
   location?: string
   loadId?: string
-  notes?: string
-}
-
-export interface Stage extends Entity {
-  matchId: string
-  /** Order shot, starting at 1. */
-  sequence: number
-  name?: string
-  roundsFired: number
-  impacts: number
+  /** Free text, e.g. "78/100, 12th". Deliberately unstructured. */
+  result?: string
   notes?: string
 }
