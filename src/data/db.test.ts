@@ -21,6 +21,6 @@ describe('MatchTrackerDb upgrades', () => {
     await db.open()
     expect(await db.loads.get('a')).toMatchObject({ chargeGr: 30.2 })
     expect(await db.rangeStrings.where('loadId').equals('a').count()).toBe(1)
-    expect(db.tables.map((t) => t.name).sort()).toEqual(['loads', 'matches', 'rangeStrings'])
+    expect(db.tables.map((t) => t.name).sort()).toEqual(['loads', 'matches', 'meta', 'rangeStrings'])
   })
 })

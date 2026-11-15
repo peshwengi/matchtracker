@@ -6,5 +6,6 @@ export type Route =
   | { screen: 'matches' }
   /** `id` edits a match; `loadId` starts a new one for that load and returns to it. */
   | { screen: 'match-form'; id?: string; loadId?: string }
+  | { screen: 'backup' }
 
 export type Navigate = (route: Route) => void

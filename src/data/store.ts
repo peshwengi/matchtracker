@@ -1,6 +1,8 @@
+import { BACKUP_FORMAT_VERSION, type Backup } from '../domain/backup.ts'
 import type { LoadDraft } from '../domain/load.ts'
 import type { ShotViewSession } from '../domain/shotview.ts'
 import type { Entity, Load, Match, RangeString } from '../domain/types.ts'
+import type { EntityTable } from 'dexie'
 import { db as defaultDb, type MatchTrackerDb } from './db.ts'
 import { newEntity, touch } from './entity.ts'
 
@@ -111,6 +113,68 @@ export class Store {
     await this.db.matches.update(id, { deletedAt, updatedAt: deletedAt })
   }
 
+  /** Everything on this device, including soft-deleted records. */
+  async exportBackup(): Promise<Backup> {
+    const [loads, rangeStrings, matches] = await Promise.all([
+      this.db.loads.toArray(),
+      this.db.rangeStrings.toArray(),
+      this.db.matches.toArray(),
+    ])
+    return {
+      app: 'matchtracker',
+      formatVersion: BACKUP_FORMAT_VERSION,
+      exportedAt: new Date().toISOString(),
+      loads,
+      rangeStrings,
+      matches,
+    }
+  }
+
+  /**
+   * Merge a backup into this device. Nothing is removed: a record missing here
+   * is added, and one present in both keeps whichever copy was updated last.
+   */
+  async restoreBackup(backup: Backup): Promise<RestoreResult> {
+    const result: RestoreResult = { added: 0, updated: 0, unchanged: 0 }
+    const merge = async <T extends Entity>(table: EntityTable<T, 'id'>, incoming: T[]) => {
+      const existing = new Map((await table.toArray()).map((r) => [r.id, r]))
+      const toWrite: T[] = []
+      for (const record of incoming) {
+        const current = existing.get(record.id)
+        if (!current) result.added++
+        else if (record.updatedAt > current.updatedAt) result.updated++
+        else {
+          result.unchanged++
+          continue
+        }
+        toWrite.push(record)
+      }
+      await table.bulkPut(toWrite)
+    }
+    await this.db.transaction('rw', this.db.loads, this.db.rangeStrings, this.db.matches, async () => {
+      await merge(this.db.loads, backup.loads)
+      await merge(this.db.rangeStrings, backup.rangeStrings)
+      await merge(this.db.matches, backup.matches)
+    })
+    return result
+  }
+
+  /** Record that `backup` was saved, so later changes can be counted against it. */
+  async markBackedUp(backup: Backup): Promise<void> {
+    await this.db.meta.put({ key: 'lastBackupAt', value: backup.exportedAt })
+  }
+
+  async backupStatus(): Promise<BackupStatus> {
+    const lastBackupAt = (await this.db.meta.get('lastBackupAt'))?.value
+    const all: Entity[] = [
+      ...(await this.db.loads.toArray()),
+      ...(await this.db.rangeStrings.toArray()),
+      ...(await this.db.matches.toArray()),
+    ]
+    const changed = lastBackupAt ? all.filter((r) => r.updatedAt > lastBackupAt).length : all.length
+    return { lastBackupAt, total: all.length, changed }
+  }
+
   /**
    * Attach an imported ShotView session to a load. Importing the same session
    * twice is a no-op. Reports a bullet weight that disagrees with the load.
@@ -144,6 +208,21 @@ export class Store {
     const mismatch = weight !== undefined && weight !== load.bulletWeightGr
     return { outcome: 'imported', string, bulletWeightMismatchGr: mismatch ? weight : undefined }
   }
+}
+
+export interface BackupStatus {
+  /** When the last backup was taken on this device, if ever. */
+  lastBackupAt?: string
+  /** Records that exist, including deleted ones. */
+  total: number
+  /** Records added, changed or deleted since the last backup. */
+  changed: number
+}
+
+export interface RestoreResult {
+  added: number
+  updated: number
+  unchanged: number
 }
 
 export type ImportResult =

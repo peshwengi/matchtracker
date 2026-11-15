@@ -1,10 +1,17 @@
 import Dexie, { type EntityTable } from 'dexie'
 import type { Load, Match, RangeString } from '../domain/types.ts'
 
+/** Device-local settings. Never included in a backup. */
+export interface Meta {
+  key: string
+  value: string
+}
+
 export class MatchTrackerDb extends Dexie {
   loads!: EntityTable<Load, 'id'>
   rangeStrings!: EntityTable<RangeString, 'id'>
   matches!: EntityTable<Match, 'id'>
+  meta!: EntityTable<Meta, 'key'>
 
   constructor(name = 'matchtracker') {
     super(name)
@@ -18,6 +25,7 @@ export class MatchTrackerDb extends Dexie {
     })
     // Per-stage scoring was dropped before it was ever used.
     this.version(2).stores({ stages: null })
+    this.version(3).stores({ meta: 'key' })
   }
 }
 

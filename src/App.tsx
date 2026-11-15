@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BackupScreen } from './ui/BackupScreen.tsx'
 import { LoadDetailScreen } from './ui/LoadDetailScreen.tsx'
 import { LoadFormScreen } from './ui/LoadFormScreen.tsx'
 import { LoadsScreen } from './ui/LoadsScreen.tsx'
@@ -20,6 +21,8 @@ function App() {
       return <LoadDetailScreen key={route.id} id={route.id} navigate={navigate} />
     case 'load-form':
       return <LoadFormScreen key={route.id ?? route.fromId ?? 'new'} id={route.id} fromId={route.fromId} navigate={navigate} />
+    case 'backup':
+      return <BackupScreen navigate={navigate} />
     case 'matches':
       return <MatchesScreen navigate={navigate} />
     case 'match-form':

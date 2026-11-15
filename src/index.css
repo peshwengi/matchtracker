@@ -82,6 +82,7 @@ p {
 button,
 .file {
   font: inherit;
+  font-size: 1rem;
   min-height: 2.75rem;
   padding: 0 1rem;
   border-radius: 0.6rem;
@@ -387,4 +388,23 @@ select:focus-visible {
 .tabs button[aria-current='page'] {
   color: var(--accent);
   font-weight: 700;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.warn {
+  color: var(--danger);
+}
+
+.dot {
+  display: inline-block;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: 0.35rem;
+  border-radius: 50%;
+  background: var(--danger);
+  vertical-align: middle;
 }

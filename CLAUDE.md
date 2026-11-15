@@ -14,7 +14,7 @@ It exists because other reloading apps demand too much input up front. The owner
 
 Design rule that follows from this: **never add a required field or a setup step.** A load needs only a charge weight, bullet type and bullet weight (the owner made the bullet mandatory: it defines the external ballistics, and they need the weight to hand when setting up the chronograph). Everything else is optional, free text where possible, and prefilled from the previous load. Do not add separate records for rifles, barrels, component lots, brass firings or anything else that must be set up before a load can be created; an earlier model had these and was removed for this reason. Ask the owner before adding a new thing to measure.
 
-Status: all three steps are built. Loads: comparison list, form, detail with ShotView import. Matches: list and form, reached from a bottom tab bar and from a load's own Matches section. A match needs only a name; its result is one free-text field and there is no per-stage scoring, by the rule above. There is no backup or export yet, so the owner's data exists only on their phone.
+Status: all three steps are built. Loads: comparison list, form, detail with ShotView import. Matches: list and form, reached from a bottom tab bar and from a load's own Matches section. A match needs only a name; its result is one free-text field and there is no per-stage scoring, by the rule above. Backup is manual: the Backup tab exports one JSON file and restores from one.
 
 ## Commands
 
@@ -46,6 +46,8 @@ It is single-user today but may be opened to other shooters later. Three rules k
 Navigation is a `Route` value held in `App.tsx` state (`src/ui/nav.ts`); there is no router library or URL routing. Styling is plain CSS in `src/index.css` with light and dark themes from CSS variables.
 
 Deleting a load soft-deletes its range strings but leaves its matches, which keep showing the load as history; `listLoads(true)` includes deleted loads for that purpose.
+
+Backup (`src/domain/backup.ts`, `Store.exportBackup/restoreBackup`): one JSON file with every record, soft-deleted ones included. Restore is a merge, never a replace: missing records are added, and a record on both sides keeps the copy with the later `updatedAt`. A web app cannot write to iCloud itself, so export hands the file to the iOS share sheet (`navigator.share` with a file), falling back to a download elsewhere; the share must start inside the tap, which is why the screen keeps a snapshot ready. The time of the last backup lives in the `meta` table, which is device-local and never exported; the tab bar shows a dot while records have changed since. When adding a new kind of record, add it to the backup, to `parseBackup` validation and to `backupStatus`, or it will silently not be backed up.
 
 The loads screen is the comparison view: `groupLoads()` puts loads sharing rifle, bullet and powder in one table sorted by charge, so a charge ladder reads top to bottom.
 

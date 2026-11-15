@@ -1,14 +1,24 @@
+import { useBackupStatus } from '../data/hooks.ts'
 import type { Navigate } from './nav.ts'
 
-export function TabBar({ current, navigate }: { current: 'loads' | 'matches'; navigate: Navigate }) {
+type Tab = 'loads' | 'matches' | 'backup'
+
+export function TabBar({ current, navigate }: { current: Tab; navigate: Navigate }) {
+  const status = useBackupStatus()
+  const unsaved = Boolean(status && status.changed > 0)
+  const tab = (id: Tab, label: string, flagged = false) => (
+    <button aria-current={current === id ? 'page' : undefined} onClick={() => navigate({ screen: id })}>
+      {label}
+      {flagged && (
+        <span className="dot" role="img" aria-label="changes not backed up" />
+      )}
+    </button>
+  )
   return (
     <nav className="tabs" aria-label="Sections">
-      <button aria-current={current === 'loads' ? 'page' : undefined} onClick={() => navigate({ screen: 'loads' })}>
-        Loads
-      </button>
-      <button aria-current={current === 'matches' ? 'page' : undefined} onClick={() => navigate({ screen: 'matches' })}>
-        Matches
-      </button>
+      {tab('loads', 'Loads')}
+      {tab('matches', 'Matches')}
+      {tab('backup', 'Backup', unsaved)}
     </nav>
   )
 }

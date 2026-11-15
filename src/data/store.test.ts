@@ -2,18 +2,23 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import fixture from '../domain/fixtures/shotview-session.csv?raw'
 import { parseShotViewCsv } from '../domain/shotview.ts'
+import { parseBackup } from '../domain/backup.ts'
 import { MatchTrackerDb } from './db.ts'
 import { Store } from './store.ts'
 
 const base = { chargeGr: 30.2, bullet: 'Hybrid', bulletWeightGr: 108 }
 
+async function newStore(): Promise<Store> {
+  const db = new MatchTrackerDb(`test-${crypto.randomUUID()}`)
+  await db.open()
+  return new Store(db)
+}
+
 describe('Store', () => {
   let store: Store
 
   beforeEach(async () => {
-    const db = new MatchTrackerDb(`test-${crypto.randomUUID()}`)
-    await db.open()
-    store = new Store(db)
+    store = await newStore()
   })
 
   it('creates a load from charge and bullet alone', async () => {
@@ -99,5 +104,68 @@ describe('Store', () => {
     expect((await store.listStrings(load.id))[0]).toMatchObject({ groupSizeIn: 0.42, distanceYd: 100 })
     await store.deleteString(result.string.id)
     expect(await store.listStrings(load.id)).toEqual([])
+  })
+
+  describe('backup', () => {
+    async function seed() {
+      const load = await store.createLoad(base)
+      await store.importShotViewSession(load.id, parseShotViewCsv(fixture))
+      await store.createMatch({ name: 'Spring', startsOn: '2026-04-01', loadId: load.id })
+      return load
+    }
+
+    it('restores everything onto an empty device, through the file format', async () => {
+      const load = await seed()
+      const deleted = await store.createLoad({ ...base, chargeGr: 31 })
+      await store.deleteLoad(deleted.id)
+      const text = JSON.stringify(await store.exportBackup())
+
+      const other = await newStore()
+      expect(await other.restoreBackup(parseBackup(text))).toEqual({ added: 4, updated: 0, unchanged: 0 })
+      expect((await other.listLoads()).map((l) => l.id)).toEqual([load.id])
+      expect(await other.listLoads(true)).toHaveLength(2)
+      expect((await other.listStrings(load.id))[0].velocitiesFps).toHaveLength(5)
+      expect((await other.listMatches())[0]).toMatchObject({ name: 'Spring', loadId: load.id })
+    })
+
+    it('restoring the same backup twice changes nothing', async () => {
+      await seed()
+      const backup = await store.exportBackup()
+      expect(await store.restoreBackup(backup)).toEqual({ added: 0, updated: 0, unchanged: 3 })
+    })
+
+    it('keeps the newer copy and never removes records', async () => {
+      const load = await seed()
+      const old = await store.exportBackup()
+      await new Promise((r) => setTimeout(r, 5))
+      await store.updateLoad(load.id, { ...base, chargeGr: 30.6 })
+      const extra = await store.createLoad({ ...base, chargeGr: 31 })
+
+      // An older backup does not overwrite newer local edits or drop new records.
+      expect(await store.restoreBackup(old)).toEqual({ added: 0, updated: 0, unchanged: 3 })
+      expect((await store.getLoad(load.id))?.chargeGr).toBe(30.6)
+      expect(await store.getLoad(extra.id)).toBeDefined()
+
+      // A newer backup does update an older device.
+      const newer = await store.exportBackup()
+      const other = await newStore()
+      await other.restoreBackup(old)
+      expect(await other.restoreBackup(newer)).toEqual({ added: 1, updated: 1, unchanged: 2 })
+      expect((await other.getLoad(load.id))?.chargeGr).toBe(30.6)
+    })
+
+    it('counts changes since the last backup', async () => {
+      expect(await store.backupStatus()).toEqual({ lastBackupAt: undefined, total: 0, changed: 0 })
+      const load = await seed()
+      expect(await store.backupStatus()).toMatchObject({ lastBackupAt: undefined, total: 3, changed: 3 })
+
+      const backup = await store.exportBackup()
+      await store.markBackedUp(backup)
+      expect(await store.backupStatus()).toEqual({ lastBackupAt: backup.exportedAt, total: 3, changed: 0 })
+
+      await new Promise((r) => setTimeout(r, 5))
+      await store.deleteLoad(load.id)
+      expect(await store.backupStatus()).toMatchObject({ total: 3, changed: 2 })
+    })
   })
 })
